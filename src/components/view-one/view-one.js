@@ -45,7 +45,7 @@ const ViewOne = ({ fetchStatesData }) => {
         addNodeIfNotExists(
           {
             id: elem.id,
-            type: 'input',
+            //type: 'input',
             data: { label: elem.key },
             position: { x: currentX, y: currentY },
           },
@@ -63,7 +63,7 @@ const ViewOne = ({ fetchStatesData }) => {
               addNodeIfNotExists(
                 {
                   id: trans.id,
-                  type: 'input', // input node
+                  //type: 'input', // input node
                   data: { label: destNode?.key },
                   position: { x: currentX, y: currentY },
                 },
@@ -77,6 +77,8 @@ const ViewOne = ({ fetchStatesData }) => {
               id: 'e' + elem.id + '-' + trans.id,
               source: elem.id,
               target: trans.id,
+              arrowHeadType: 'arrowclosed',
+              animated: true,
             });
           });
         }
