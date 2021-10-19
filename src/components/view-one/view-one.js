@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-import { connect } from "react-redux";
-import messages from "./messages";
-import ReactFlow from "react-flow-renderer";
-import Text from "@commercetools-uikit/text";
-import { useApplicationContext } from "@commercetools-frontend/application-shell-connectors";
+import { connect } from 'react-redux';
+import fetchStatesData from '../../actions/states';
+import ReactFlow from 'react-flow-renderer';
+import SelectInput from '@commercetools-uikit/select-input';
+import Text from '@commercetools-uikit/text';
 
-import fetchStatesData from "../../actions/states";
+import messages from './messages';
+import styles from './view-one.mod.css';
 
 const ViewOne = ({ fetchStatesData }) => {
   const addNodeIfNotExists = (newNode, nodeCollection = []) => {
@@ -19,40 +20,18 @@ const ViewOne = ({ fetchStatesData }) => {
     }
   };
   const [nodeCollection, setNodeCollection] = useState([]);
+  const [entities, setEntities] = useState([]);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [statesData, setStatesData] = useState([]);
 
-  const elements = [
-    {
-      id: "1",
-      type: "input", // input node
-      data: { label: "Input Node" },
-      position: { x: 250, y: 25 },
-    },
-    // default node
-    {
-      id: "2",
-      // you can also pass a React component as a label
-      data: { label: <div>Default Node</div> },
-      position: { x: 100, y: 125 },
-    },
-    {
-      id: "3",
-      type: "output", // output node
-      data: { label: "Output Node" },
-      position: { x: 250, y: 250 },
-    },
-    // animated edge
-    { id: "e1-2", source: "1", target: "2", animated: true },
-    { id: "e2-3", source: "2", target: "3" },
-  ];
-  /*   const projectKey = useApplicationContext((context) => context.project.key);
-   */
+  const handleChangeSelectedEntity = (event) => {
+    setSelectedEntity(event.target.value);
+  };
 
   useEffect(() => {
-    const fetchImportSinksData = async () => {
-      const results = await fetchStatesData();
-      console.log(results);
-      let filteredResults = results.results.filter(
-        (state) => state.type === "LineItemState"
+    if (selectedEntity) {
+      let filteredResults = statesData.filter(
+        (state) => state.type === selectedEntity,
       );
       console.log(filteredResults);
 
@@ -62,67 +41,84 @@ const ViewOne = ({ fetchStatesData }) => {
       let currentY = 25;
       let xPadding = 200;
       let yPadding = 70;
-      results.results.forEach((elem) => {
+      filteredResults.forEach((elem) => {
         addNodeIfNotExists(
           {
             id: elem.id,
-            type: "input", // input node
+            type: 'input',
             data: { label: elem.key },
             position: { x: currentX, y: currentY },
           },
-          returnedNodes
+          returnedNodes,
         );
         currentY += yPadding;
         currentX = initialX;
         if (elem.transitions) {
           elem.transitions.forEach((trans) => {
-            let destNode = results.results.filter(
-              (node) => node.id === trans.id
+            let destNode = filteredResults.filter(
+              (node) => node.id === trans.id,
             );
             destNode = destNode.length > 0 ? destNode[0] : null;
             if (
               addNodeIfNotExists(
                 {
                   id: trans.id,
-                  type: "input", // input node
+                  type: 'input', // input node
                   data: { label: destNode?.key },
                   position: { x: currentX, y: currentY },
                 },
-                returnedNodes
+                returnedNodes,
               )
             ) {
               currentX += xPadding;
             }
 
             returnedNodes.push({
-              id: "e" + elem.id + "-" + trans.id,
+              id: 'e' + elem.id + '-' + trans.id,
               source: elem.id,
               target: trans.id,
             });
           });
         }
       });
-      console.log("returnedNodes", returnedNodes);
+      console.log('returnedNodes', returnedNodes);
       setNodeCollection(returnedNodes);
-      //dispatch({ type: "SET_IMPORT_SINKS", importSinksData: results });
+    }
+  }, [selectedEntity]);
+  useEffect(() => {
+    const fetchStates = async () => {
+      const results = await fetchStatesData();
+
+      console.log('results', results);
+      let returnedTypesSet = new Set();
+      results?.results?.forEach((state) => returnedTypesSet.add(state.type));
+      let returnedTypesArray = Array.from(returnedTypesSet);
+      console.log('returnedTypesArray', returnedTypesArray);
+      setEntities(returnedTypesArray);
+      setStatesData(results.results);
     };
-    fetchImportSinksData();
+    fetchStates();
   }, []);
   return (
     <>
-      {/*       <div style={{ height: 300 }}>
-        <ReactFlow elements={elements} />
-      </div> */}
-      <Text.Body intlMessage={messages.title} />;
-      {nodeCollection?.length > 0 && (
-        <div style={{ height: 5000 }}>
-          <ReactFlow elements={nodeCollection} />
-        </div>
-      )}
+      <Text.Body intlMessage={messages.title} />
+      <SelectInput
+        name="entity-selector"
+        value={selectedEntity}
+        onChange={handleChangeSelectedEntity}
+        options={entities.map((entity) => ({ value: entity, label: entity }))}
+      />
+      <div className={styles['diagram-container']}>
+        {nodeCollection?.length > 0 && (
+          <div style={{ height: 5000 }}>
+            <ReactFlow elements={nodeCollection} />
+          </div>
+        )}
+      </div>
     </>
   );
 };
-ViewOne.displayName = "ViewOne";
+ViewOne.displayName = 'ViewOne';
 
 export default connect(null, {
   fetchStatesData,
